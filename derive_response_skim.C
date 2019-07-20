@@ -78,9 +78,8 @@ TLorentzVector findMissEtJets(int nref, float* pt_F, float* rawpt_F, float* eta_
 
 void derive_response_skim(bool is_pp=1, bool is_data=1){
 
-    //JetCorrector *L1 = new JetCorrector("Spring18_ppRef5TeV_V1_MC_L2Relative_AK4PF.txt");
     JetCorrector L1("Spring18_ppRef5TeV_V1_MC_L2Relative_AK4PF.txt");
-    //JetCorrector *L1 = new JetCorrector("Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
+    JetCorrector L1("Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
 
     double lowest_corrpt;
     if(is_pp) lowest_corrpt = 15.;
@@ -400,6 +399,7 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
         h_jeteta[mycbin]->Fill(fabs(calo_jteta->at(highest_corrpt_ind)), pthat_weight);
         h_jetphi[mycbin]->Fill(calo_jtphi->at(highest_corrpt_ind), pthat_weight);
 
+        //Fill responses
         //if(calo_corrpt[highest_corrpt_ind] < phoEt->at(highest_pho_Et_ind) && phoEt->at(highest_pho_Et_ind) < 80.) cout<<calo_corrpt[highest_corrpt_ind]<<"  "<<phoEt->at(highest_pho_Et_ind)<<endl;
         //pt bal method
         h_R_jtpt[mycbin][alphabin]->Fill(phoEt->at(highest_pho_Et_ind), calo_corrpt[highest_corrpt_ind] / phoEt->at(highest_pho_Et_ind), pthat_weight);
