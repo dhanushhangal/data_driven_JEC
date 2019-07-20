@@ -374,6 +374,7 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
 
         for(int jet = 0; jet < (int) calo_jtpt->size() ; jet++) {
 
+            //continue if this is leading jet
             if(jet == highest_corrpt_ind || calo_corrpt[jet] < 5. || fabs(calo_jteta->at(jet)) > 5.) continue;        
 
             double dphi3 = fabs(calo_jtphi->at(jet) - phoPhi->at(highest_pho_Et_ind));
@@ -381,6 +382,7 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
             if(dphi3>(2*3.14159)) dphi3-=(2*3.14159);
             if(dphi3>3.14159) dphi3=2*3.14159-dphi3;
 
+            //continue if in the same hemisphere as photon
             if(dphi3 < 1.57) continue;
 
             if(calo_corrpt[jet] > sec_highest_jetpt){
