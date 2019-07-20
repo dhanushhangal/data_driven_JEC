@@ -78,7 +78,7 @@ TLorentzVector findMissEtJets(int nref, float* pt_F, float* rawpt_F, float* eta_
 
 void derive_response_skim(bool is_pp=1, bool is_data=1){
 
-    TString corr_file;
+    string corr_file;
     if(is_pp) corr_file = "Spring18_ppRef5TeV_V1_MC_L2Relative_AK4PF.txt";
     else corr_file = "Autumn18_HI_V1_MC_L2Relative_AK4PF.txt";
 
@@ -241,7 +241,7 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     mixing_tree->SetBranchAddress("calo_jteta",&calo_jteta);
     mixing_tree->SetBranchAddress("calo_jtphi",&calo_jtphi);
     mixing_tree->SetBranchAddress("calp_jtm",&calo_jtm);
-    if(!is_data) mixing_tree->SetBranchAddress("refpt",&calo_refpt);
+    if(!is_data) mixing_tree->SetBranchAddress("calo_refpt",&calo_refpt);
 
     mixing_tree->SetBranchAddress("phoEt",&phoEt);
     mixing_tree->SetBranchAddress("phoEta",&phoEta);
