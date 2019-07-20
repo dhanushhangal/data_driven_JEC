@@ -78,8 +78,11 @@ TLorentzVector findMissEtJets(int nref, float* pt_F, float* rawpt_F, float* eta_
 
 void derive_response_skim(bool is_pp=1, bool is_data=1){
 
-    JetCorrector L1("Spring18_ppRef5TeV_V1_MC_L2Relative_AK4PF.txt");
-    JetCorrector L1("Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
+    TString corr_file;
+    if(is_pp) corr_file = "Spring18_ppRef5TeV_V1_MC_L2Relative_AK4PF.txt";
+    else corr_file = "Autumn18_HI_V1_MC_L2Relative_AK4PF.txt";
+
+    JetCorrector L1(corr_file);
 
     double lowest_corrpt;
     if(is_pp) lowest_corrpt = 15.;
