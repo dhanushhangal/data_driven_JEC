@@ -60,12 +60,12 @@ TLorentzVector findMissEtJets(int nref, float* pt_F, float* rawpt_F, float* eta_
 
   for(int i=0; i<nref; i++){
 	  if (pt_F[i]<12.) continue; 
-	  if (rawpt_F[i]<10 && rawpt_F[i]>5){
+	  if (rawpt_F[i]<15 && rawpt_F[i]>5){
 		  sum_ex += rawpt_F[i]*cos(phi_F[i]);
 		  sum_ey += rawpt_F[i]*sin(phi_F[i]);  
 	  }
 	  //else {
-	  if (rawpt_F[i]>10){
+	  if (rawpt_F[i]>15){
 		  sum_ex += pt_F[i]*cos(phi_F[i]);
 		  sum_ey += pt_F[i]*sin(phi_F[i]);  
 	  }
@@ -110,6 +110,8 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     TH1D *h_jeteta[nCbins];
     TH1D *h_jetphi[nCbins];
 
+    TH1D *h_dphi[nCbins];
+
     TH1D *h_phopt[nCbins];
     TH1D *h_phoeta[nCbins];
     TH1D *h_phophi[nCbins];
@@ -144,6 +146,9 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
         h_phoeta[ibin]->Sumw2();
         h_phophi[ibin]->Sumw2();
 
+        h_dphi[ibin] = new TH1D(Form("h_dphi_cent%d", ibin),"",100,0.,3.14);
+        h_dphi[ibin] -> Sumw2();
+
 	    for(int ibin2=0; ibin2<nbins_alpha; ibin2++){
 	      h_R_jtpt[ibin][ibin2] = new TH2D(Form("h_R_jtpt_cent%d_alpha%d",ibin,ibin2),"",nbins_pt, xbins_pt,30,0.,3.);
 	      h_R_jtpt[ibin][ibin2]->Sumw2();
@@ -156,7 +161,8 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     TFile *my_file;
 
     if(is_data){
-      if(is_pp) my_file = TFile::Open("ppdata_L3Res_Jul18.root");
+      if(is_pp) my_file = TFile::Open("ppdata2017_L3Res_Jul24.root");
+      //if(is_pp) my_file = TFile::Open("Data_pp.root");
       else my_file = TFile::Open("PbPbdata2018_L3Res_Jul15.root");       
     }
     else{
@@ -179,17 +185,27 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     const double phoEt_min = 40.;
     const double jtpt_min = 12.;
 
+    const float hovere_max = 0.006778;
+    const float see_min = 0.;
+    const float see_max = 0.009555;
+    const float iso_max = -0.010780;
+
     Float_t jtpt_arr[MAXJETS], jteta_arr[MAXJETS], jtphi_arr[MAXJETS], jtm_arr[MAXJETS], rawpt_arr[MAXJETS];
 
     //vector<float> *phoEt=0,*phoEta=0,*phoPhi=0;
+    vector<float> *pfcIso3pTgt2p0subUE=0, *pfpIso3subUE=0, *pfnIso3subUE=0;
     vector<float> *phoEta=0, *phoPhi=0, *phoEt=0, *pho_swissCrx=0, *pho_seedTime=0, *phoSigmaIEtaIEta_2012=0, *phoHoverE=0, *pho_ecalClusterIsoR4=0, *pho_hcalRechitIsoR4=0, *pho_trackIsoR4PtCut20=0;
-    vector<float> *calo_jtpt=0, *calo_rawpt=0, *calo_jteta=0, *calo_jtphi=0, *calo_jtm=0, *calo_refpt = 0; 
+    vector<float> *calo_jtpt=0, *calo_rawpt=0, *calo_jteta=0, *calo_jtphi=0, *calo_jtm=0, *calo_refpt = 0, *calo_trackmax = 0; 
     Int_t n_evt, nref, nPFpart, nPho;
     Int_t HLT_HIGEDPhoton20_v1, HLT_HIGEDPhoton20_v1_Prescl, HLT_HIGEDPhoton30_v1, HLT_HIGEDPhoton30_v1_Prescl, HLT_HIGEDPhoton40_v1, HLT_HIGEDPhoton40_v1_Prescl;
 
     Int_t HLT_HISinglePhoton10_Eta1p5ForPPRef_v8, HLT_HISinglePhoton10_Eta1p5ForPPRef_v8_Prescl, HLT_HISinglePhoton15_Eta1p5ForPPRef_v8, HLT_HISinglePhoton15_Eta1p5ForPPRef_v8_Prescl;
     Int_t HLT_HISinglePhoton20_Eta1p5ForPPRef_v8, HLT_HISinglePhoton20_Eta1p5ForPPRef_v8_Prescl, HLT_HISinglePhoton30_Eta1p5ForPPRef_v8, HLT_HISinglePhoton30_Eta1p5ForPPRef_v8_Prescl;
-    Int_t HLT_HISinglePhoton40_Eta1p5ForPPRef_v8, HLT_HISinglePhoton40_Eta1p5ForPPRef_v8_Prescl;
+    Int_t HLT_HISinglePhoton40_Eta1p5ForPPRef_v8, HLT_HISinglePhoton40_Eta1p5ForPPRef_v8_Prescl, HLT_HISinglePhoton15_Eta1p5ForPPRef_v9, HLT_HISinglePhoton15_Eta1p5ForPPRef_v9_Prescl;
+
+    Int_t HLT_HIAK4PFJet40_v1=-999, HLT_HIAK4PFJet40_v1_Prescl=-999, HLT_HIAK4PFJet60_v1=-999, HLT_HIAK4PFJet60_v1_Prescl=-999;
+    Int_t HLT_HIAK4PFJet80_v1=-999, HLT_HIAK4PFJet80_v1_Prescl=-999, HLT_HIAK4PFJet100_v1=-999, HLT_HIAK4PFJet100_v1_Prescl=-999;
+    Int_t HLT_HIAK4PFJet120_v1=-999, HLT_HIAK4PFJet120_v1_Prescl=-999;
 
     Int_t HBHENoiseFilterResultRun2Loose, pprimaryVertexFilter, phfCoincFilter3, pclusterCompatibilityFilter, eventSelection, pBeamScrapingFilter;
 
@@ -206,20 +222,14 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     if(is_pp){
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton10_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton10_Eta1p5ForPPRef_v8);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton10_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton10_Eta1p5ForPPRef_v8_Prescl);                        
+        mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton10_Eta1p5ForPPRef_v8);                        
+        mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton10_Eta1p5ForPPRef_v8_Prescl);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton20_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton20_Eta1p5ForPPRef_v8);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton20_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton20_Eta1p5ForPPRef_v8_Prescl);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton30_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton30_Eta1p5ForPPRef_v8);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton30_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton30_Eta1p5ForPPRef_v8_Prescl);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton40_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton40_Eta1p5ForPPRef_v8);                        
         mixing_tree->SetBranchAddress("HLT_HISinglePhoton40_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton40_Eta1p5ForPPRef_v8_Prescl);
-        if(is_data){
-            mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v9",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v8);                        
-            mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v9_Prescl",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v8_Prescl);     
-        }
-        else{
-            mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v8",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v8);                        
-            mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v8_Prescl",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v8_Prescl);                        
-        }
 
         mixing_tree->SetBranchAddress("pPAprimaryVertexFilter",&pprimaryVertexFilter);
     }
@@ -254,8 +264,30 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     mixing_tree->SetBranchAddress("pho_hcalRechitIsoR4",&pho_hcalRechitIsoR4);
     mixing_tree->SetBranchAddress("pho_trackIsoR4PtCut20",&pho_trackIsoR4PtCut20);
 
+    if(is_data){
+        mixing_tree->SetBranchAddress("calo_trackmax",&calo_trackmax);
+
+        mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v9",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v9);                        
+        mixing_tree->SetBranchAddress("HLT_HISinglePhoton15_Eta1p5ForPPRef_v9_Prescl",&HLT_HISinglePhoton15_Eta1p5ForPPRef_v9_Prescl);                        
+
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet40_v1",&HLT_HIAK4PFJet40_v1);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet40_v1_Prescl",&HLT_HIAK4PFJet40_v1_Prescl);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet60_v1",&HLT_HIAK4PFJet60_v1);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet60_v1_Prescl",&HLT_HIAK4PFJet60_v1_Prescl);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet80_v1",&HLT_HIAK4PFJet80_v1);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet80_v1_Prescl",&HLT_HIAK4PFJet80_v1_Prescl);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet100_v1",&HLT_HIAK4PFJet100_v1);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet100_v1_Prescl",&HLT_HIAK4PFJet100_v1_Prescl);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet120_v1",&HLT_HIAK4PFJet120_v1);
+        mixing_tree->SetBranchAddress("HLT_HIAK4PFJet120_v1_Prescl",&HLT_HIAK4PFJet120_v1_Prescl);
+
+        mixing_tree->SetBranchAddress("pfcIso3pTgt2p0subUE",&pfcIso3pTgt2p0subUE);
+        mixing_tree->SetBranchAddress("pfpIso3subUE",&pfpIso3subUE);
+        mixing_tree->SetBranchAddress("pfnIso3subUE",&pfnIso3subUE);
+    }
+
 	n_evt = mixing_tree->GetEntriesFast();
-    //n_evt = 10000;
+    //n_evt = 3904;
     cout<<n_evt<<endl;
     int ntrigevt = 0;
 	
@@ -295,13 +327,22 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
         int n_high_pho=0;
 
         for(int pho = 0; pho < (int) phoEt->size() ; pho++) {
-
+/*
             //photon cuts
             if(phoEt->at(pho) < phoEt_min || fabs(phoEta->at(pho)) > eta_max) continue;
             else if(abs(pho_seedTime->at(pho)) > 3. || pho_swissCrx->at(pho) >0.9 || phoSigmaIEtaIEta_2012->at(pho) < 0.002 || phoSigmaIEtaIEta_2012->at(pho) > 0.01) continue;
             else if (phoHoverE->at(pho) > 0.1) continue;
             else if ((pho_ecalClusterIsoR4->at(pho) + pho_hcalRechitIsoR4->at(pho) + pho_trackIsoR4PtCut20->at(pho)) > 1) continue;
-
+*/
+            //pp2017
+            //photon cuts
+            if(phoEt->at(pho) < phoEt_min || fabs(phoEta->at(pho)) > eta_max) continue;
+            if(phoHoverE->at(pho) > hovere_max) continue; 
+/*
+            else if(phoSigmaIEtaIEta_2012->at(pho) > 0.009555) continue;
+            else if (phoHoverE->at(pho) > hovere_max) continue;
+            else if ((pfcIso3pTgt2p0subUE->at(pho)+pfpIso3subUE->at(pho)+pfnIso3subUE->at(pho)) < -0.010780) continue;
+*/
             n_high_pho++;
 
             if(phoEt->at(pho) > highest_pho_Et){
@@ -310,15 +351,25 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
             }
         }//photon loop
 
+        /* require leading photon */
+        if (highest_pho_Et_ind < 0.) { continue; }
+
+        if (phoSigmaIEtaIEta_2012->at(highest_pho_Et_ind) > see_max || phoSigmaIEtaIEta_2012->at(highest_pho_Et_ind) < see_min) continue;
+
+        if ((pfcIso3pTgt2p0subUE->at(highest_pho_Et_ind)+pfpIso3subUE->at(highest_pho_Et_ind)+pfnIso3subUE->at(highest_pho_Et_ind)) > -0.010780) continue;
+
         //pp triggers
         if(is_pp && is_data){
-            if(HLT_HISinglePhoton20_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 40. && highest_pho_Et < 60.) highest_pho_Et_ind=highest_pho_Et_ind; 
+            if(HLT_HISinglePhoton10_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 25. && highest_pho_Et < 35.) highest_pho_Et_ind=highest_pho_Et_ind; 
+            else if(HLT_HISinglePhoton15_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 35. && highest_pho_Et < 45.) highest_pho_Et_ind=highest_pho_Et_ind; 
+            else if(HLT_HISinglePhoton15_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 35. && highest_pho_Et < 45.) highest_pho_Et_ind=highest_pho_Et_ind; 
+            else if(HLT_HISinglePhoton20_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 45. && highest_pho_Et < 60.) highest_pho_Et_ind=highest_pho_Et_ind; 
             else if(HLT_HISinglePhoton30_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 60. && highest_pho_Et < 70.) highest_pho_Et_ind=highest_pho_Et_ind; 
             else if(HLT_HISinglePhoton40_Eta1p5ForPPRef_v8 == 1 && highest_pho_Et > 70. && highest_pho_Et < 400.) highest_pho_Et_ind=highest_pho_Et_ind; 
             else highest_pho_Et_ind = -1;
         }
 
-        if(highest_pho_Et_ind == -1 || n_high_pho > 1) continue;
+        if(highest_pho_Et_ind == -1/* || n_high_pho > 1*/) continue;
         ntrigevt++;
         
         h_phopt[mycbin]->Fill(phoEt->at(highest_pho_Et_ind), pthat_weight);
@@ -342,6 +393,8 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
                 //calo_corrpt[jet] = calo_rawpt->at(jet);
             }
 
+            if(is_data && (calo_trackmax->at(jet)/calo_rawpt->at(jet) > 0.98 || calo_trackmax->at(jet)/calo_rawpt->at(jet) < 0.01)) continue;
+
             jtpt_arr[jet] = calo_corrpt[jet];
             rawpt_arr[jet] = calo_rawpt->at(jet);
             jteta_arr[jet] = calo_jteta->at(jet);
@@ -363,8 +416,17 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
                 }
             }
         }
-
-    	if(highest_corrpt_ind < 0.) continue;
+/*
+        if(is_pp && is_data){
+            if(HLT_HIAK4PFJet40_v1 == 1 && highest_corrpt > 55. && highest_pho_Et < 75.) highest_corrpt_ind=highest_corrpt_ind; 
+            else if(HLT_HIAK4PFJet60_v1 == 1 && highest_corrpt > 75. && highest_pho_Et < 95.) highest_corrpt_ind=highest_corrpt_ind; 
+            else if(HLT_HIAK4PFJet80_v1 == 1 && highest_corrpt > 95. && highest_pho_Et < 400.) highest_corrpt_ind=highest_corrpt_ind; 
+        }
+*/
+        if(highest_corrpt_ind < 0.) continue;
+        
+        //cout<<phoPhi->at(highest_pho_Et_ind)<<"  "<<jtphi_arr[highest_corrpt_ind]<<endl;
+        h_dphi[mycbin]->Fill(fabs(phoPhi->at(highest_pho_Et_ind)-jtphi_arr[highest_corrpt_ind]), pthat_weight);
 
         nref = calo_jtpt->size();
 
@@ -376,7 +438,7 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
 
             //continue if this is leading jet
             if(jet == highest_corrpt_ind || calo_corrpt[jet] < 5. || fabs(calo_jteta->at(jet)) > 5.) continue;        
-
+            
             double dphi3 = fabs(calo_jtphi->at(jet) - phoPhi->at(highest_pho_Et_ind));
 
             if(dphi3>(2*3.14159)) dphi3-=(2*3.14159);
@@ -424,12 +486,12 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
     TFile *output_file;
 
     if(is_data){
-      if(is_pp) output_file = new TFile("ppdata2017_L3Res_Jul20_histos.root", "RECREATE");
-      else output_file = new TFile("PbPbdata2018_L3Res_Jul20_histos.root", "RECREATE");       
+      if(is_pp) output_file = new TFile("ppdata2017_L3Res_Jul31_histos.root", "RECREATE");
+      else output_file = new TFile("PbPbdata2018_L3Res_Jul31_histos.root", "RECREATE");       
     }
     else{
-      if(is_pp) output_file = new TFile("ppMC2017_L3Res_Jul20_histos.root", "RECREATE");
-      else output_file = new TFile("PbPbMC2018_L3Res_Jul20_histos.root", "RECREATE");
+      if(is_pp) output_file = new TFile("ppMC2017_L3Res_Jul31_histos.root", "RECREATE");
+      else output_file = new TFile("PbPbMC2018_L3Res_Jul31_histos.root", "RECREATE");
     }
 	output_file->cd();
 
@@ -449,6 +511,8 @@ void derive_response_skim(bool is_pp=1, bool is_data=1){
         h_phopt[ibin]->Write();
         h_phoeta[ibin]->Write();
         h_phophi[ibin]->Write(); 
+
+        h_dphi[ibin]->Write();
 
         for(int ibin2=0; ibin2<nbins_alpha; ibin2++){
             h_R_jtpt[ibin][ibin2]->Write(); 
